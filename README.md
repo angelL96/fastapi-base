@@ -1,5 +1,103 @@
 # FastAPI Project - Backend
 
+## Architecture Overview
+
+This FastAPI project follows a **Domain-Driven Design (DDD)** architecture with clean separation of concerns. The codebase is organized into distinct layers that promote maintainability, testability, and scalability.
+
+### Architecture Layers
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     API Layer                               │
+│  ┌─────────────────┐  ┌─────────────────┐                  │
+│  │   Routes        │  │   Dependencies  │                  │
+│  │   (FastAPI)     │  │   (Security)    │                  │
+│  └─────────────────┘  └─────────────────┘                  │
+└─────────────────────────────────────────────────────────────┘
+                               │
+┌─────────────────────────────────────────────────────────────┐
+│                   Domain Layer                              │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌──────────────┐ │
+│  │    Services     │  │    Schemas      │  │   Models     │ │
+│  │ (Business Logic)│  │ (API Contracts) │  │ (Database)   │ │
+│  └─────────────────┘  └─────────────────┘  └──────────────┘ │
+│  ┌─────────────────┐                                        │
+│  │  Repositories   │                                        │
+│  │ (Data Access)   │                                        │
+│  └─────────────────┘                                        │
+└─────────────────────────────────────────────────────────────┘
+                               │
+┌─────────────────────────────────────────────────────────────┐
+│                Infrastructure Layer                         │
+│  ┌─────────────────┐  ┌─────────────────┐                  │
+│  │   Database      │  │   Configuration │                  │
+│  │   (PostgreSQL)  │  │   (Settings)    │                  │
+│  └─────────────────┘  └─────────────────┘                  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Project Structure
+
+```
+app/
+├── main.py                     # Application entry point
+├── api/                        # API Layer
+│   ├── main.py                 # API router configuration
+│   └── routes/                 # API endpoints
+│       ├── login.py            # Authentication endpoints
+│       └── users.py            # User management endpoints
+├── core/                       # Infrastructure Layer
+│   ├── config.py               # Application settings
+│   ├── db.py                   # Database connection
+│   ├── deps.py                 # Dependency injection
+│   └── security.py             # Authentication & security
+├── domain/                     # Domain Layer (Business Logic)
+│   ├── models/                 # Database models (SQLModel)
+│   │   ├── token.py            # JWT token models
+│   │   └── users.py            # User database model
+│   ├── schemas/                # API contracts (Pydantic)
+│   │   └── users.py            # User API schemas
+│   ├── services/               # Business logic layer
+│   │   ├── auth_service.py     # Authentication business logic
+│   │   └── user_service.py     # User business logic
+│   └── repositories/           # Data access layer
+│       └── users_repository.py # User data operations
+├── alembic/                    # Database migrations
+└── tests/                      # Test suite
+```
+
+## Key Architecture Principles
+
+### 1. **Domain-Driven Design (DDD)**
+- **Domain Layer**: Contains business logic, models, and rules
+- **Application Layer**: Orchestrates domain operations
+- **Infrastructure Layer**: Handles external concerns (database, config)
+
+### 2. **Clean Architecture**
+- **Dependency Inversion**: Inner layers don't depend on outer layers
+- **Separation of Concerns**: Each layer has a specific responsibility
+- **Testability**: Business logic is isolated and easily testable
+
+### 3. **Repository Pattern**
+- Abstracts data access operations
+- Makes the application database-agnostic
+- Facilitates testing with mock implementations
+
+### 4. **Service Layer**
+- Encapsulates business logic and rules
+- Coordinates between repositories
+- Handles complex business operations
+
+## Technology Stack
+
+- **Framework**: FastAPI with Pydantic v2
+- **Database**: PostgreSQL with SQLModel (SQLAlchemy 2.0)
+- **Authentication**: JWT tokens with bcrypt password hashing
+- **Migrations**: Alembic
+- **Testing**: Pytest
+- **Code Quality**: Ruff (linting), MyPy (type checking)
+- **Dependency Management**: UV
+
 ## Requirements
 
 * [Docker](https://www.docker.com/).
@@ -9,11 +107,11 @@
 
 Start the local development environment with Docker Compose following the guide in [../development.md](../development.md).
 
-## General Workflow
+## Development Setup
 
 By default, the dependencies are managed with [uv](https://docs.astral.sh/uv/), go there and install it.
 
-From `./backend/` you can install all the dependencies with:
+From the project root you can install all the dependencies with:
 
 ```console
 $ uv sync
@@ -25,97 +123,24 @@ Then you can activate the virtual environment with:
 $ source .venv/bin/activate
 ```
 
-Make sure your editor is using the correct Python virtual environment, with the interpreter at `backend/.venv/bin/python`.
+Make sure your editor is using the correct Python virtual environment, with the interpreter at `.venv/bin/python`.
 
-Modify or add SQLModel models for data and SQL tables in `./backend/app/models.py`, API endpoints in `./backend/app/api/`, CRUD (Create, Read, Update, Delete) utils in `./backend/app/crud.py`.
+### Adding New Features
+
+When adding new features, follow the established architecture:
+
+1. **Models**: Define database models in `app/domain/models/`
+2. **Schemas**: Create API contracts in `app/domain/schemas/`
+3. **Repository**: Implement data access in `app/domain/repositories/`
+4. **Service**: Add business logic in `app/domain/services/`
+5. **API Routes**: Create endpoints in `app/api/routes/`
+6. **Tests**: Add tests in `app/tests/`
 
 ## VS Code
 
 There are already configurations in place to run the backend through the VS Code debugger, so that you can use breakpoints, pause and explore variables, etc.
 
 The setup is also already configured so you can run the tests through the VS Code Python tests tab.
-
-## Docker Compose Override
-
-During development, you can change Docker Compose settings that will only affect the local development environment in the file `docker-compose.override.yml`.
-
-The changes to that file only affect the local development environment, not the production environment. So, you can add "temporary" changes that help the development workflow.
-
-For example, the directory with the backend code is synchronized in the Docker container, copying the code you change live to the directory inside the container. That allows you to test your changes right away, without having to build the Docker image again. It should only be done during development, for production, you should build the Docker image with a recent version of the backend code. But during development, it allows you to iterate very fast.
-
-There is also a command override that runs `fastapi run --reload` instead of the default `fastapi run`. It starts a single server process (instead of multiple, as would be for production) and reloads the process whenever the code changes. Have in mind that if you have a syntax error and save the Python file, it will break and exit, and the container will stop. After that, you can restart the container by fixing the error and running again:
-
-```console
-$ docker compose watch
-```
-
-There is also a commented out `command` override, you can uncomment it and comment the default one. It makes the backend container run a process that does "nothing", but keeps the container alive. That allows you to get inside your running container and execute commands inside, for example a Python interpreter to test installed dependencies, or start the development server that reloads when it detects changes.
-
-To get inside the container with a `bash` session you can start the stack with:
-
-```console
-$ docker compose watch
-```
-
-and then in another terminal, `exec` inside the running container:
-
-```console
-$ docker compose exec backend bash
-```
-
-You should see an output like:
-
-```console
-root@7f2607af31c3:/app#
-```
-
-that means that you are in a `bash` session inside your container, as a `root` user, under the `/app` directory, this directory has another directory called "app" inside, that's where your code lives inside the container: `/app/app`.
-
-There you can use the `fastapi run --reload` command to run the debug live reloading server.
-
-```console
-$ fastapi run --reload app/main.py
-```
-
-...it will look like:
-
-```console
-root@7f2607af31c3:/app# fastapi run --reload app/main.py
-```
-
-and then hit enter. That runs the live reloading server that auto reloads when it detects code changes.
-
-Nevertheless, if it doesn't detect a change but a syntax error, it will just stop with an error. But as the container is still alive and you are in a Bash session, you can quickly restart it after fixing the error, running the same command ("up arrow" and "Enter").
-
-...this previous detail is what makes it useful to have the container alive doing nothing and then, in a Bash session, make it run the live reload server.
-
-## Backend tests
-
-To test the backend run:
-
-```console
-$ bash ./scripts/test.sh
-```
-
-The tests run with Pytest, modify and add tests to `./backend/app/tests/`.
-
-If you use GitHub Actions the tests will run automatically.
-
-### Test running stack
-
-If your stack is already up and you just want to run the tests, you can use:
-
-```bash
-docker compose exec backend bash scripts/tests-start.sh
-```
-
-That `/app/scripts/tests-start.sh` script just calls `pytest` after making sure that the rest of the stack is running. If you need to pass extra arguments to `pytest`, you can pass them to that command and they will be forwarded.
-
-For example, to stop on first error:
-
-```bash
-docker compose exec backend bash scripts/tests-start.sh -x
-```
 
 ### Test Coverage
 
@@ -161,12 +186,3 @@ and comment the line in the file `scripts/prestart.sh` that contains:
 $ alembic upgrade head
 ```
 
-If you don't want to start with the default models and want to remove them / modify them, from the beginning, without having any previous revision, you can remove the revision files (`.py` Python files) under `./backend/app/alembic/versions/`. And then create a first migration as described above.
-
-## Email Templates
-
-The email templates are in `./backend/app/email-templates/`. Here, there are two directories: `build` and `src`. The `src` directory contains the source files that are used to build the final email templates. The `build` directory contains the final email templates that are used by the application.
-
-Before continuing, ensure you have the [MJML extension](https://marketplace.visualstudio.com/items?itemName=attilabuti.vscode-mjml) installed in your VS Code.
-
-Once you have the MJML extension installed, you can create a new email template in the `src` directory. After creating the new email template and with the `.mjml` file open in your editor, open the command palette with `Ctrl+Shift+P` and search for `MJML: Export to HTML`. This will convert the `.mjml` file to a `.html` file and now you can save it in the build directory.
