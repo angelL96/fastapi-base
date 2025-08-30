@@ -2,7 +2,7 @@ from app.domain.repositories.users_repository import UsersRepository
 from fastapi import HTTPException, status
 from typing import Annotated, Any
 from fastapi import Depends
-from app.api.deps import SessionDep
+from app.core.deps import SessionDep
 from app.core.security import OAuth2PasswordBearerWithCookie
 from app.domain.models.users import User
 import jwt
@@ -58,7 +58,7 @@ class AuthService:
         if token_data.email is None:
             raise credentials_exception
         
-        user = self.users_repository.get_user_by_email(token_data.email)
+        user = self.users_repository.get_by_email(token_data.email)
         
         if user is None:
             raise credentials_exception

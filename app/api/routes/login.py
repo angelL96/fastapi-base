@@ -4,18 +4,16 @@ from fastapi.responses import JSONResponse
 from fastapi import APIRouter, Depends, status, Request, Response, HTTPException
 from app.core.security import OAuth2PasswordRequestEmail
 
-from app.api.deps import SessionDep
 from app.core.config import settings
-from app.domain.services.auth_service import AuthService
-from app.domain.repositories.users_repository import UsersRepository
+from app.domain.services import AuthService
+from app.core.deps import get_auth_service
 
 router = APIRouter(tags=["login"])
 
-def get_auth_service(session: SessionDep) -> AuthService:
-    return AuthService(UsersRepository(session))
+
 
 @router.post("/login/access-token")
-def login_access_token(
+async def login_access_token(
     form_data: Annotated[OAuth2PasswordRequestEmail, Depends()],
     auth_service: AuthService = Depends(get_auth_service)
 ) -> Response:
@@ -53,7 +51,6 @@ def login_access_token(
     )
     
     return response
-
 
 @router.post("/refresh")
 async def refresh_access_token(
